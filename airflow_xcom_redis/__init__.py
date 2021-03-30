@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import pickle
 from uuid import uuid4
 from typing import Any
 from airflow.models.xcom import BaseXCom
@@ -14,7 +15,7 @@ class XComRedisBackend(BaseXCom):
         hook = RedisHook(redis_conn_id=XComRedisBackend.CONN_ID)
         key = str(uuid4())
         # We use the default serializer, which pickles or JSONs
-        hook.get_conn().set(key, BaseXCom.serialize_value(value))
+        hook.get_conn().set(key, pickle.dumps(value))
         # Add prefix to make it clear where the value is stored.
         value = XComRedisBackend.PREFIX + key
         return BaseXCom.serialize_value(value)
@@ -27,5 +28,5 @@ class XComRedisBackend(BaseXCom):
             key = result.replace(prefix, "")
             hook = RedisHook(redis_conn_id=XComRedisBackend.CONN_ID)
             result = hook.get_conn().get(key)
-            result = BaseXCom.deserialize_value(result)
+            result = pickle.loads(result)
         return result
